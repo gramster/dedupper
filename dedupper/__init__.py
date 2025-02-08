@@ -12,8 +12,9 @@ from .dedupper import dedup
 @click.option('-d', '--database', help='Database file for persistent state.', default='')
 @click.option('-c', '--close', type=bool, help='Close any duplicates found.', default=False)
 @click.option('-p', '--pretend', type=bool, help='Do a dry run without making any changes.', default=False)
-@click.argument('repo', help='Repository name in form org/repo.')
+@click.argument('repo', required=1)
 def dedupper(token, database, close, pretend, repo):
+    """ REPO: Repository name in form org/repo. """    
     if token == '--':
         token = os.environ.get('GITHUB_TOKEN') or ''
     if not token:
