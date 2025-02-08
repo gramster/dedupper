@@ -222,7 +222,7 @@ def is_duplicate(doc_current, doc_prev):
     while retry < 3:
         try:
             response = llm_client.chat.completions.create(
-                model="phi-4",
+                model="phi4",
                 messages=[
                     {"role": "system", "content": "You are an experienced software engineer triaging issues in GitHub."},
                     {"role": "user", "content": f"""
