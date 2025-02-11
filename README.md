@@ -8,10 +8,10 @@ python -m pip install dedupper
 
 Use `dedupper -h` for help.
 
-You need to be running ollama locally as dedupper uses an LLM to make the final
-decision about whether an issue is a duplicate.
-
 State is stored in a database and subsequent runs will be incremental.
+
+You need to set an OPENAI_API_KEY environment variable as gpt-4o-turbo is
+used to make a final decison about whether issues are dups.
 
 ## Development
 
