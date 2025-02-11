@@ -40,7 +40,7 @@ PER_PAGE = 100
 # Delay (in seconds) when rate limit encountered (or when HTTP 403 is received)
 RATE_LIMIT_SLEEP = 60
 
-llm_client = openai.OpenAI(base_url='http://localhost:11434/v1/', api_key='ollama')
+llm_client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # -------- Logging --------
 logging.basicConfig(
@@ -222,7 +222,7 @@ def is_duplicate(doc_current, doc_prev):
     while retry < 3:
         try:
             response = llm_client.chat.completions.create(
-                model="phi4",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are an experienced software engineer triaging issues in GitHub."},
                     {"role": "user", "content": f"""
@@ -259,7 +259,9 @@ def detect_duplicates(issues_db):
     For every open issue that has not been commented about as a duplicate,
     check all older issues (created earlier) for a potential duplicate.
     Returns a list of tuples: (open_issue_number, list_of_duplicate_issue_numbers)
+    and a dictionary of titles indexed by number.
     """
+    titles = {}
     c = issues_db.cursor()
     # Get all issues from the DB with their key fields
     c.execute(
@@ -294,10 +296,12 @@ def detect_duplicates(issues_db):
             doc_prev = combine_text(prev)
             if is_duplicate_candidate(doc_current, doc_prev):
                 if is_duplicate(doc_current, doc_prev):
+                    titles[prev["number"]] = prev.get("title", "")
                     duplicates.append(prev["number"])
         if duplicates:
+            titles[issue["number"]] = issue.get("title", "")            
             results.append((issue["number"], duplicates))
-    return results
+    return results, titles
 
 
 # -------- Mark Issue as Commented --------
@@ -344,7 +348,7 @@ def dedup(token, database, repo, close=False, pretend=False):
     logging.info("Fetched and stored %d new issues", new_issue_count)
 
     # Duplicate detection, for each open and not-yet-commented issue
-    dup_results = detect_duplicates(conn)
+    dup_results, titles = detect_duplicates(conn)
     if not dup_results:
         logging.info("No duplicate issues found.")
     else:
@@ -354,9 +358,11 @@ def dedup(token, database, repo, close=False, pretend=False):
             comment = f"dedupper.py detects this as a duplicate of issue(s): {dup_list_text}"
             if close:
                 comment += "\n\nPlease reopen if you disagree."
-            logging.info(
-                "Issue #%d is duplicate of: %s", open_issue_num, dup_list_text
-            )
+            for num in dup_nums:
+                logging.info(
+                    "Issue #%d: '%s' may be a dup of #%d: '%s'", 
+                        open_issue_num, titles[open_issue_num], num, titles[num]
+                )                           
             if not pretend:
                 # Post the comment
                 gh.add_comment(repo, open_issue_num, comment)
