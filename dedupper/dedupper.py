@@ -42,13 +42,12 @@ RATE_LIMIT_SLEEP = 60
 
 llm_client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-# -------- Logging --------
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 
-# -------- GitHub API Client --------
 class GitHubClient:
     def __init__(self, token):
         self.token = token
@@ -149,7 +148,7 @@ class GitHubClient:
                 "Failed to close issue #%d: %s", issue_number, response.text
             )      
 
-# -------- Database Functions --------
+
 def init_db(db_file):
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
@@ -197,7 +196,6 @@ def insert_issue(conn, issue):
     conn.commit()
 
 
-# -------- Duplicate Detection --------
 def combine_text(issue):
     # Combine the title and body (if present) into one document
     parts = [issue.get("title", "")]
@@ -254,6 +252,7 @@ ISSUE 2
             retry += 1
     return False
 
+
 def detect_duplicates(issues_db):
     """
     For every open issue that has not been commented about as a duplicate,
@@ -304,14 +303,12 @@ def detect_duplicates(issues_db):
     return results, titles
 
 
-# -------- Mark Issue as Commented --------
 def mark_issue_commented(conn, issue_number):
     c = conn.cursor()
     c.execute("UPDATE issues SET duplicate_commented=1 WHERE number=?", (issue_number,))
     conn.commit()
 
 
-# -------- Main Program Flow --------
 def dedup(token, database, repo, close=False, pretend=False):
 
     # Initialize database connection
